@@ -2,17 +2,17 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Define : MonoBehaviour
+public static class Define
 {
-    // Start is called before the first frame update
-    void Start()
-    {
-        
+    public enum EScene{
+        Unknown,
+        TitleScene,
+        GameScene
     }
-
-    // Update is called once per frame
-    void Update()
-    {
-        
+    public enum EUIEvent{
+        Click,
+        PointerDown,
+        PointerUp,
+        Drag
     }
 }

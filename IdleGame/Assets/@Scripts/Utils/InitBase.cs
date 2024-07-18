@@ -4,15 +4,18 @@ using UnityEngine;
 
 public class InitBase : MonoBehaviour
 {
-    // Start is called before the first frame update
-    void Start()
+    protected bool _init = false;
+
+    public virtual bool Init()
     {
-        
+        if (_init)
+            return false;
+
+        _init = true;
+        return true;
     }
 
-    // Update is called once per frame
-    void Update()
-    {
-        
+    private void Awake(){
+        Init();
     }
 }

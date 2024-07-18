@@ -3,10 +3,21 @@ using System.Collections.Generic;
 using Unity.VisualScripting;
 using UnityEngine;
 
-public class TitleScene : MonoBehaviour
+public class TitleScene : BaseScene
 {
-    // Start is called before the first frame update
-    void Start()
+    public override bool Init()
+    {
+        if(base.Init() == false)
+        return false;
+
+        SceneType = Define.EScene.TitleScene;
+
+        //StartLoadAssets();
+        
+        return true;
+    }
+
+    void StartLoadAssets()
     {
         Managers.Resource.LoadAllAsync<Object>("PreLoad",(key, count, totalCount)=>{
             Debug.Log($"{key} {count}/{totalCount}");
@@ -17,9 +28,8 @@ public class TitleScene : MonoBehaviour
         });
     }
 
-    // Update is called once per frame
-    void Update()
+    public override void Clear()
     {
-        
+
     }
 }
