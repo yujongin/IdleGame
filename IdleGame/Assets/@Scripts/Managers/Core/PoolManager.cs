@@ -73,7 +73,7 @@ public class PoolManager
 	public GameObject Pop(GameObject prefab)
 	{
 		if (_pools.ContainsKey(prefab.name) == false)
-			CreatePool(prefab);
+			CreatePool(prefab); 
 
 		return _pools[prefab.name].Pop();
 	}
