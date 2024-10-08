@@ -40,6 +40,7 @@ public static class Define
 		Creature,
 		Projectile,
 		Env,
+		Effect,
 	}
 
 	public enum ECreatureType
@@ -56,6 +57,7 @@ public static class Define
 		Idle,
 		Move,
 		Skill,
+		OnDamaged,
 		Dead
 	}
 
@@ -65,7 +67,8 @@ public static class Define
 		TargetMonster,
 		CollectEnv,
 		ReturnToCamp,
-		ForceMove
+		ForceMove,
+		ForcePath
 	}
 
 	public enum EEnvState
@@ -97,6 +100,99 @@ public static class Define
 		Big
 	}
 
+	public enum EFindPathResult
+	{
+		Fail_LerpCell,
+		Fail_NoPath,
+		Fail_MoveTo,
+		Success,
+	}
+
+	public enum ECellCollisionType
+	{
+		None,
+		SemiWall,
+		Wall,
+	}
+
+	public enum ESkillSlot
+	{
+		Default,
+		Env,
+		A,
+		B
+	}
+
+	public enum EIndicatorType
+	{
+		None,
+		Cone,
+		Rectangle,
+	}
+
+	public enum EEffectSize
+	{
+		CircleSmall,
+		CircleNormal,
+		CircleBig,
+		ConeSmall,
+		ConeNormal,
+		ConeBig,
+	}
+
+	public enum EStatModType
+	{
+		Add,
+		PercentAdd,
+		PercentMult,
+	}
+
+	public enum EEffectType
+	{
+		Buff,
+		Debuff,
+		CrowdControl,
+	}
+
+	public enum EEffectSpawnType
+	{
+		Skill, // 지속시간이 있는 기본적인 이펙트 
+		External, // 외부(장판스킬)에서 이펙트를 관리(지속시간에 영향을 받지않음)
+	}
+
+	public enum EEffectClearType
+	{
+		TimeOut, // 시간초과로 인한 Effect 종료
+		ClearSkill, // 정화 스킬로 인한 Effect 종료
+		TriggerOutAoE, // AoE스킬을 벗어난 종료
+		EndOfAirborne, // 에어본이 끝난 경우 호출되는 종료
+	}
+
+	public enum EEffectClassName
+	{
+		Bleeding,
+		Poison,
+		Ignite,
+		Heal,
+		AttackBuff,
+		MoveSpeedBuff,
+		AttackSpeedBuff,
+		LifeStealBuff,
+		ReduceDmgBuff,
+		ThornsBuff,
+		Knockback,
+		Airborne,
+		PullEffect,
+		Stun,
+		Freeze,
+		CleanDebuff,
+	}
+
+
+	public const float EFFECT_SMALL_RADIUS = 2.5f;
+	public const float EFFECT_NORMAL_RADIUS = 4.5f;
+	public const float EFFECT_BIG_RADIUS = 5.5f;
+
 	public const int CAMERA_PROJECTION_SIZE = 12;
 
 	// HARD CODING
@@ -106,8 +202,12 @@ public static class Define
 	public const int HERO_DEFAULT_RANGED_ATTACK_RANGE = 5;
 	public const float HERO_DEFAULT_STOP_RANGE = 1.5f;
 
+	public const int HERO_DEFAULT_MOVE_DEPTH = 5;
+	public const int MONSTER_DEFAULT_MOVE_DEPTH = 3;
+
 	public const int HERO_WIZARD_ID = 201000;
 	public const int HERO_KNIGHT_ID = 201001;
+	public const int HERO_LION_ID = 201003;
 
 	public const int MONSTER_SLIME_ID = 202001;
 	public const int MONSTER_SPIDER_COMMON_ID = 202002;
@@ -117,6 +217,10 @@ public static class Define
 
 	public const int ENV_TREE1_ID = 300001;
 	public const int ENV_TREE2_ID = 301000;
+
+	public const char MAP_TOOL_WALL = '0';
+	public const char MAP_TOOL_NONE = '1';
+	public const char MAP_TOOL_SEMI_WALL = '2';
 }
 
 public static class AnimName

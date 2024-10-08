@@ -1,5 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
+using Unity.VisualScripting;
 using UnityEngine;
 using static Define;
 
@@ -7,7 +9,9 @@ public class ObjectManager
 {
 	public HashSet<Hero> Heroes { get; } = new HashSet<Hero>();
 	public HashSet<Monster> Monsters { get; } = new HashSet<Monster>();
+	public HashSet<Projectile> Projectiles { get; } = new HashSet<Projectile>();
 	public HashSet<Env> Envs { get; } = new HashSet<Env>();
+	public HashSet<EffectBase> Effects { get; } = new HashSet<EffectBase>();
 	public HeroCamp Camp { get; private set; }
 
 	#region Roots
@@ -22,8 +26,30 @@ public class ObjectManager
 
 	public Transform HeroRoot { get { return GetRootTransform("@Heroes"); } }
 	public Transform MonsterRoot { get { return GetRootTransform("@Monsters"); } }
+	public Transform ProjectileRoot { get { return GetRootTransform("@Projectiles"); } }
 	public Transform EnvRoot { get { return GetRootTransform("@Envs"); } }
+	public Transform EffectRoot { get { return GetRootTransform("@Effects"); } }
 	#endregion
+
+	public void ShowDamageFont(Vector2 position, float damage, Transform parent, bool isCritical = false)
+	{
+		GameObject go = Managers.Resource.Instantiate("DamageFont", pooling: true);
+		DamageFont damageText = go.GetComponent<DamageFont>();
+		damageText.SetInfo(position, damage, parent, isCritical);
+	}
+
+	public GameObject SpawnGameObject(Vector3 position, string prefabName)
+	{
+		GameObject go = Managers.Resource.Instantiate(prefabName, pooling: true);
+		go.transform.position = position;
+		return go;
+	}
+
+	public T Spawn<T>(Vector3Int cellPos, int templateID) where T : BaseObject
+	{
+		Vector3 spawnPos = Managers.Map.Cell2World(cellPos);
+		return Spawn<T>(spawnPos, templateID);
+	}
 
 	public T Spawn<T>(Vector3 position, int templateID) where T : BaseObject
 	{
@@ -56,17 +82,15 @@ public class ObjectManager
 		}
 		else if (obj.ObjectType == EObjectType.Projectile)
 		{
-			// TODO
+			obj.transform.parent = ProjectileRoot;
+
+			Projectile projectile = go.GetComponent<Projectile>();
+			Projectiles.Add(projectile);
+
+			projectile.SetInfo(templateID);
 		}
 		else if (obj.ObjectType == EObjectType.Env)
 		{
-			// Data Check
-			if (templateID != 0 && Managers.Data.EnvDic.TryGetValue(templateID, out Data.EnvData data) == false)
-			{
-				Debug.LogError($"ObjectManager Spawn Env Failed! TryGetValue TemplateID : {templateID}");
-				return null;
-			}
-
 			obj.transform.parent = EnvRoot;
 
 			Env env = go.GetComponent<Env>();
@@ -103,12 +127,18 @@ public class ObjectManager
 		}
 		else if (obj.ObjectType == EObjectType.Projectile)
 		{
-			// TODO
+			Projectile projectile = obj as Projectile;
+			Projectiles.Remove(projectile);
 		}
 		else if (obj.ObjectType == EObjectType.Env)
 		{
 			Env env = obj as Env;
 			Envs.Remove(env);
+		}
+		else if (obj.ObjectType == EObjectType.Effect)
+		{
+			EffectBase effect = obj as EffectBase;
+			Effects.Remove(effect);
 		}
 		else if (obj.ObjectType == EObjectType.HeroCamp)
 		{
@@ -117,4 +147,83 @@ public class ObjectManager
 
 		Managers.Resource.Destroy(obj.gameObject);
 	}
+
+	#region Skill 판정
+	public List<Creature> FindConeRangeTargets(Creature owner, Vector3 dir, float range, int angleRange, bool isAllies = false)
+	{
+		HashSet<Creature> targets = new HashSet<Creature>();
+		HashSet<Creature> ret = new HashSet<Creature>();
+
+		ECreatureType targetType = Util.DetermineTargetType(owner.CreatureType, isAllies);
+
+		if (targetType == ECreatureType.Monster)
+		{
+			var objs = Managers.Map.GatherObjects<Monster>(owner.transform.position, range, range);
+			targets.AddRange(objs);
+		}
+		else if (targetType == ECreatureType.Hero)
+		{
+			var objs = Managers.Map.GatherObjects<Hero>(owner.transform.position, range, range);
+			targets.AddRange(objs);
+		}
+
+		foreach (var target in targets)
+		{
+			// 1. 거리안에 있는지 확인
+			var targetPos = target.transform.position;
+			float distance = Vector3.Distance(targetPos, owner.transform.position);
+
+			if (distance > range)
+				continue;
+
+			// 2. 각도 확인
+			if (angleRange != 360)
+			{
+				BaseObject ownerTarget = (owner as Creature).Target;
+
+				// 2. 부채꼴 모양 각도 계산
+				float dot = Vector3.Dot((targetPos - owner.transform.position).normalized, dir.normalized);
+				float degree = Mathf.Rad2Deg * Mathf.Acos(dot);
+
+				if (degree > angleRange / 2f)
+					continue;
+			}
+
+			ret.Add(target);
+		}
+
+		return ret.ToList();
+	}
+
+	public List<Creature> FindCircleRangeTargets(Creature owner, Vector3 startPos, float range, bool isAllies = false)
+	{
+		HashSet<Creature> targets = new HashSet<Creature>();
+		HashSet<Creature> ret = new HashSet<Creature>();
+
+		ECreatureType targetType = Util.DetermineTargetType(owner.CreatureType, isAllies);
+
+		if (targetType == ECreatureType.Monster)
+		{
+			var objs = Managers.Map.GatherObjects<Monster>(owner.transform.position, range, range);
+			targets.AddRange(objs);
+		}
+		else if (targetType == ECreatureType.Hero)
+		{
+			var objs = Managers.Map.GatherObjects<Hero>(owner.transform.position, range, range);
+			targets.AddRange(objs);
+		}
+
+		foreach (var target in targets)
+		{
+			// 1. 거리안에 있는지 확인
+			var targetPos = target.transform.position;
+			float distSqr = (targetPos - startPos).sqrMagnitude;
+
+			if (distSqr < range * range)
+				ret.Add(target);
+		}
+
+		return ret.ToList();
+	}
+	#endregion
 }

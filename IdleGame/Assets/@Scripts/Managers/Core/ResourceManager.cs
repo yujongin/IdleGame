@@ -17,6 +17,12 @@ public class ResourceManager
 		if (_resources.TryGetValue(key, out Object resource))
 			return resource as T;
 
+		if (typeof(T) == typeof(Sprite) && key.Contains(".sprite") == false)
+		{
+			if (_resources.TryGetValue($"{key}.sprite", out resource))
+				return resource as T;
+		}
+
 		return null;
 	}
 
@@ -29,8 +35,8 @@ public class ResourceManager
 			return null;
 		}
 
-		// if (pooling)
-		// 	return Managers.Pool.Pop(prefab);
+		if (pooling)
+			return Managers.Pool.Pop(prefab);
 
 		GameObject go = Object.Instantiate(prefab, parent);
 		go.name = prefab.name;
@@ -43,8 +49,8 @@ public class ResourceManager
 		if (go == null)
 			return;
 
-		// if (Managers.Pool.Push(go))
-		// 	return;
+		if (Managers.Pool.Push(go))
+			return;
 
 		Object.Destroy(go);
 	}

@@ -5,7 +5,7 @@ using static Define;
 
 public class Monster : Creature
 {
-	public override ECreatureState CreatureState
+	public override ECreatureState CreatureState 
 	{
 		get { return base.CreatureState; }
 		set
@@ -50,6 +50,7 @@ public class Monster : Creature
 
 		// State
 		CreatureState = ECreatureState.Idle;
+
 	}
 
 	void Start()
@@ -58,7 +59,6 @@ public class Monster : Creature
 	}
 
 	#region AI
-	public float AttackDistance { get; private set; } = 4.0f;
 	Vector3 _destPos;
 	Vector3 _initPos;
 
@@ -88,24 +88,31 @@ public class Monster : Creature
 
 	protected override void UpdateMove()
 	{
-		if (Target == null)
+		if (Target.IsValid() == false)
 		{
-			// Patrol or Return
-			Vector3 dir = (_destPos - transform.position);
-			if (dir.sqrMagnitude <= 0.01f)
+			Creature creature = FindClosestInRange(MONSTER_SEARCH_DISTANCE, Managers.Object.Heroes, func: IsValid) as Creature;
+			if (creature != null)
+			{
+				Target = creature;
+				CreatureState = ECreatureState.Move;
+				return;
+			}
+
+			// Move
+			FindPathAndMoveToCellPos(_destPos, MONSTER_DEFAULT_MOVE_DEPTH);
+
+			if (LerpCellPosCompleted)
 			{
 				CreatureState = ECreatureState.Idle;
 				return;
 			}
-
-			SetRigidBodyVelocity(dir.normalized * MoveSpeed);
 		}
 		else
 		{
 			// Chase
-			ChaseOrAttackTarget(MONSTER_SEARCH_DISTANCE, 5.0f);
+			ChaseOrAttackTarget(MONSTER_SEARCH_DISTANCE, AttackDistance);
 
-			//너무 멀어지면 포기
+			// 너무 멀어지면 포기.
 			if (Target.IsValid() == false)
 			{
 				Target = null;
@@ -117,11 +124,14 @@ public class Monster : Creature
 
 	protected override void UpdateSkill()
 	{
-
-		if (_coWait != null)
+		base.UpdateSkill();
+		if (Target.IsValid() == false)
+		{
+			Target = null;
+			_destPos = _initPos;
+			CreatureState = ECreatureState.Move;
 			return;
-
-		CreatureState = ECreatureState.Move;
+		}
 	}
 
 	protected override void UpdateDead()
@@ -131,14 +141,14 @@ public class Monster : Creature
 	#endregion
 
 	#region Battle
-	public override void OnDamaged(BaseObject attacker)
+	public override void OnDamaged(BaseObject attacker, SkillBase skill)
 	{
-		base.OnDamaged(attacker);
+		base.OnDamaged(attacker, skill);
 	}
 
-	public override void OnDead(BaseObject attacker)
+	public override void OnDead(BaseObject attacker, SkillBase skill)
 	{
-		base.OnDead(attacker);
+		base.OnDead(attacker, skill);
 
 		// TODO : Drop Item
 
